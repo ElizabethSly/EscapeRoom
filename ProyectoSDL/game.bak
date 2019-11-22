@@ -1,0 +1,160 @@
+#ifndef GAME_H_INCLUDED
+#define GAME_H_INCLUDED
+#include <SDL.h>
+#include <SDL_image.h>
+#include <stdio.h>
+#include <string>
+#include <iostream>
+#include "mouse.h"
+#include "Textura.h"
+
+class Game{
+public:
+     Game();
+     void init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen);
+     void handleEvents();
+     void update();
+     void render();
+     void clean();
+
+     SDL_Texture* loadTexture( std::string path );
+     bool loadMedia();
+
+     bool running(){return isRunning;}
+private:
+    int roomActual;
+
+    bool isRunning;
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+
+
+    Textura room1;
+    Textura room2;
+
+
+    cMouse gMouse;
+};
+
+Game::Game(){
+    roomActual = 1;
+}
+
+void Game::init(const char* title, int xpos, int ypos, int width, int height, bool fullscreen){
+    int flags=0;
+    if(fullscreen){
+        flags=SDL_WINDOW_FULLSCREEN;
+    }
+    if(SDL_Init(SDL_INIT_EVERYTHING)==0){
+        std::cout<<"Subsystems Initialized"<<std::endl;
+        window=SDL_CreateWindow(title,xpos,ypos,width,height,flags);
+        if(window){
+            std::cout<<"window created"<<std::endl;
+        }
+        renderer=SDL_CreateRenderer(window,-1,0);
+        if(renderer){
+            SDL_SetRenderDrawColor(renderer,255,255,255,255);
+            std::cout<<"renderer created!"<<std::endl;
+        }
+        //Initialize PNG loading
+        int imgFlags = IMG_INIT_PNG;
+        if( !( IMG_Init( imgFlags ) & imgFlags ) ){
+            printf( "SDL_image no inicializó! SDL_image Error: %s\n", IMG_GetError() );
+        }
+        if(!loadMedia()){
+            printf("Error al cargar la Media");
+        }
+        isRunning=true;
+    }else{isRunning=false;}
+}
+
+void Game::handleEvents(){
+    int x, y;
+    SDL_Event event;
+    SDL_PollEvent(&event);
+    switch(event.type){
+        case SDL_QUIT:
+            isRunning=false;
+        break;
+        case SDL_MOUSEBUTTONDOWN:
+            SDL_GetMouseState( &x, &y );
+            switch(roomActual){
+            case 1:
+                if(x>230 && x<300 && y>357 && y<422){
+                    roomActual = 2;
+                }
+            break;
+            case 2:
+                if (x>0 && x<115 && y>0 && y<45){
+                    roomActual = 1;}
+            break;
+
+            }
+        break;
+        case SDL_MOUSEMOTION:
+            SDL_GetMouseState( &x, &y );
+            system("cls");
+            std::cout << "x = " << x <<std::endl;
+            std::cout << "y = " << y <<std::endl;
+        break;
+        default:
+        break;
+    }
+}
+
+void Game::update(){
+
+}
+
+void Game::render(){
+    SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
+    SDL_RenderClear( renderer );
+
+    switch(roomActual){
+    case 1:
+        room1.render(0,0,room1.getClip(),renderer);
+        break;
+    case 2:
+        room2.render(0,0,room2.getClip(),renderer);
+        break;
+    }
+
+
+    SDL_RenderPresent(renderer);
+}
+
+void Game::clean(){
+    SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
+    SDL_Quit();
+    std::cout<<"Game Cleaned"<<std::endl;
+}
+
+bool Game::loadMedia(){
+	//Loading success flag
+	bool success = true;
+
+	if(!room1.loadFromFile("Room1.png", renderer)){
+        printf( "Failed to load room1 texture!\n" );
+		success = false;
+	}
+	else
+	{
+		//Set sprite clips
+		room1.setClip(0,0,room1.getWidth(),room1.getHeight());
+		room1.setCantidadClips(1);
+	}
+
+	if(!room2.loadFromFile("Room2.png", renderer)){
+        printf( "Failed to load room2 texture!\n" );
+		success = false;
+	}
+	else{
+        room2.setClip(0,0,room2.getWidth(),room2.getHeight());
+        room2.setCantidadClips(1);
+	}
+
+	return success;
+}
+
+#endif // GAME_H_INCLUDED
